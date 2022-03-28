@@ -89,12 +89,12 @@ int is_fqdn(const char *host) {
 }
 
 const char *get_from_addr(const char *host, char *dest, int show_ip) {
-	char buff[1024];
+	char buff[NI_MAXHOST];
 
 	if (show_ip) {
 		sprintf(dest, "%s", host);
 	} else {
-		int ret = dns_resolve(host, buff, 1024);
+		int ret = dns_resolve(host, buff, NI_MAXHOST);
 		if (ret) {
 			sprintf(dest, "%s (%s)", host, host);
 		} else {

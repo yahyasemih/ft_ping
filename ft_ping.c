@@ -4,11 +4,11 @@ ping_context_t g_ctx;
 
 void statistics_handler(int sig) {
 	(void)sig;
-	char buff[1024];
+	char buff[NI_MAXHOST];
 	if (is_fqdn(g_ctx.host)) {
 		printf("\n--- %s ping statistics ---\n", g_ctx.host);
 	} else {
-		if (dns_resolve(g_ctx.host_ip, buff, 1024)) {
+		if (dns_resolve(g_ctx.host_ip, buff, NI_MAXHOST)) {
 			printf("\n--- %s ping statistics ---\n", g_ctx.host);
 		} else {
 			printf("\n--- %s ping statistics ---\n", buff);
@@ -100,9 +100,11 @@ int receive_packet() {
 	socklen_t dst_addr_len;
 
 	dst_addr_len = sizeof(*g_ctx.dst);
-	received = recvfrom(g_ctx.socket_fd, g_ctx.recv_buf, sizeof(g_ctx.recv_buf), 0, (struct sockaddr *)g_ctx.dst, &dst_addr_len);
+	received = recvfrom(g_ctx.socket_fd, g_ctx.recv_buf, sizeof(g_ctx.recv_buf), 0, (struct sockaddr *)g_ctx.dst,
+			&dst_addr_len);
 	if (ft_memcmp(g_ctx.recv_buf + 16, g_ctx.send_buf + 16, 40) == 0) {
-		received = recvfrom(g_ctx.socket_fd, g_ctx.recv_buf, sizeof(g_ctx.recv_buf), 0, (struct sockaddr *)g_ctx.dst, &dst_addr_len);
+		received = recvfrom(g_ctx.socket_fd, g_ctx.recv_buf, sizeof(g_ctx.recv_buf), 0, (struct sockaddr *)g_ctx.dst,
+				&dst_addr_len);
 	}
 
 	if (received < 0) {
@@ -198,7 +200,7 @@ void ping_handler(int sig) {
 		received = receive_packet();
 		char src_name[INET_ADDRSTRLEN];
 		char dst_name[INET_ADDRSTRLEN];
-		char src_dns[1024];
+		char src_dns[NI_MAXHOST];
 		inet_ntop(AF_INET, &ip->ip_src, src_name, INET_ADDRSTRLEN);
 		inet_ntop(AF_INET, &ip->ip_dst, dst_name, INET_ADDRSTRLEN);
 		if (received) {
@@ -269,11 +271,11 @@ void start_pinging(const char *str) {
 		freeaddrinfo(g_ctx.addr);
 		exit(2);
 	}
-	char buff[1024];
+	char buff[NI_MAXHOST];
 	if (is_fqdn(g_ctx.host)) {
 		printf("PING %s (%s) %d(%d) bytes of data.\n", g_ctx.host, g_ctx.host, DATA_SIZE, DATA_SIZE + 28);
 	} else {
-		if (dns_resolve(g_ctx.host_ip, buff, 1024)) {
+		if (dns_resolve(g_ctx.host_ip, buff, NI_MAXHOST)) {
 			printf("PING %s (%s) %d(%d) bytes of data.\n", g_ctx.host, g_ctx.host_ip, DATA_SIZE, DATA_SIZE + 28);
 		} else {
 			printf("PING %s (%s) %d(%d) bytes of data.\n", buff, g_ctx.host_ip, DATA_SIZE, DATA_SIZE + 28);
