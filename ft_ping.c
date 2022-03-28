@@ -9,7 +9,7 @@ void statistics_handler(int sig) {
 	double max = g_ctx.stats.max / 1000.0;
 	double mdev = (max - min) / 2.0;
 
-	g_ctx.stats.total_time += (g_ctx.stats.transmitted - 1) * 1000;
+	g_ctx.stats.total_time = (g_ctx.stats.transmitted - 1) * 1000 + g_ctx.stats.sum / 1000;
 	printf("%d packets transmitted, %d received,", g_ctx.stats.transmitted, g_ctx.stats.received);
 	if (g_ctx.stats.errors > 0) {
 		printf(" +%d errors,", g_ctx.stats.errors);
@@ -61,7 +61,7 @@ int send_packet() {
     ip->ip_off = 0;
     ip->ip_ttl = g_ctx.ttl;
     ip->ip_p = IPPROTO_ICMP;
-    ip->ip_sum = cksum((unsigned short *)g_ctx.send_buf, ip->ip_hl);
+    ip->ip_sum = cksum((unsigned short *)ip, ip->ip_hl);
 
 	icmp->icmp_type = ICMP_ECHO;
     icmp->icmp_code = 0;
@@ -200,12 +200,6 @@ void ping_handler(int sig) {
 			statistics_handler(SIGALRM);
 		}
 	}
-	gettimeofday(&end, NULL);
-	duration = end.tv_usec - start.tv_usec;
-	if (duration < 0) {
-		duration += 1000000;
-	}
-	g_ctx.stats.total_time += duration / 1000;
 }
 
 void start_pinging(const char *str) {
