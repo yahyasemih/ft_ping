@@ -103,3 +103,29 @@ const char *get_from_addr(const char *host, char *dest, int show_ip) {
 	}
 	return dest;
 }
+
+const char *ft_gai_strerror(int errcode) {
+	if (errcode == EAI_BADFLAGS) {
+		return "Bad value for ai_flags";
+	} else if (errcode == EAI_NONAME) {
+		return "Name or service not known";
+	} else if (errcode == EAI_AGAIN) {
+		return "Temporary failure in name resolution";
+	} else if (errcode == EAI_FAIL) {
+		return "Non-recoverable failure in name resolution";
+	} else if (errcode == EAI_FAMILY) {
+		return "ai_family not supported";
+	} else if (errcode == EAI_SOCKTYPE) {
+		return "ai_socktype not supported";
+	} else if (errcode == EAI_SERVICE) {
+		return "Servname not supported for ai_socktype";
+	} else if (errcode == EAI_MEMORY) {
+		return "Memory allocation failure";
+	} else if (errcode == EAI_SYSTEM) {
+		return "System error";
+	} else if (errcode == EAI_OVERFLOW) {
+		return "Argument buffer overflow";
+	} else {
+		return "Unknown error";
+	}
+}

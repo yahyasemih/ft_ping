@@ -17,5 +17,6 @@ int search_char(const char *s, char c);
 int is_ip(const char *host);
 int is_fqdn(const char *host);
 const char *get_from_addr(const char *host, char *dest, int show_ip);
+const char *ft_gai_strerror(int errcode);
 
 #endif

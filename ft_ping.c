@@ -262,7 +262,7 @@ void start_pinging(const char *str) {
 	hints.ai_family = AF_INET;
 	int ret = getaddrinfo(g_ctx.host, NULL, &hints, &g_ctx.addr);
     if (ret) {
-        fprintf(stderr, "%s: %s: %s\n", str, g_ctx.host, gai_strerror(ret));
+        fprintf(stderr, "%s: %s: %s\n", str, g_ctx.host, ft_gai_strerror(ret));
 		freeaddrinfo(g_ctx.addr);
 		exit(2);
     }
