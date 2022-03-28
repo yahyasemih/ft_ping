@@ -64,21 +64,22 @@ int send_packet() {
 
 	inet_pton(AF_INET, "0.0.0.0", &ip->ip_src);
 	inet_pton(AF_INET, g_ctx.host_ip, &ip->ip_dst);
+	g_ctx.dst->sin_addr = ip->ip_dst;
 	ip->ip_v = 4;
     ip->ip_hl = 5;
     ip->ip_tos = 0;
 	ip->ip_len = ft_htons(sizeof(g_ctx.send_buf));
-    ip->ip_id = ft_htons(123);
+    ip->ip_id = ft_htons((uint16_t)getpid());
     ip->ip_off = 0;
     ip->ip_ttl = g_ctx.ttl;
     ip->ip_p = IPPROTO_ICMP;
-    ip->ip_sum = cksum((unsigned short *)ip, ip->ip_hl);
+    ip->ip_sum = ft_checksum((unsigned short *)ip, ip->ip_hl);
 
 	icmp->icmp_type = ICMP_ECHO;
     icmp->icmp_code = 0;
-    icmp->icmp_id = ft_htons(123);
+    icmp->icmp_id = ft_htons((uint16_t)getpid());
     icmp->icmp_seq = g_ctx.stats.transmitted;
-    icmp->icmp_cksum = cksum((unsigned short *)icmp, sizeof(g_ctx.send_buf) - sizeof(struct icmp));
+    icmp->icmp_cksum = ft_checksum((unsigned short *)icmp, sizeof(g_ctx.send_buf) - sizeof(struct icmp));
 	g_ctx.dst->sin_family = AF_INET;
 
 	sent = sendto(g_ctx.socket_fd, g_ctx.send_buf, sizeof(g_ctx.send_buf), 0, (struct sockaddr *)g_ctx.dst,

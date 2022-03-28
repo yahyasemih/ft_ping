@@ -30,7 +30,7 @@ int dns_resolve(const char *host, char *dest, int size) {
    return getnameinfo((struct sockaddr *)&socket_address, sizeof(socket_address), dest, size, NULL, 0, NI_NAMEREQD);
 }
 
-unsigned short cksum(unsigned short *addr, int len) {
+unsigned short ft_checksum(unsigned short *addr, int len) {
     int nleft = len;
     int sum = 0;
     unsigned short *w = addr;
