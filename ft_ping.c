@@ -103,7 +103,7 @@ int receive_packet() {
 	dst_addr_len = sizeof(*g_ctx.dst);
 	received = recvfrom(g_ctx.socket_fd, g_ctx.recv_buf, sizeof(g_ctx.recv_buf), 0, (struct sockaddr *)g_ctx.dst,
 			&dst_addr_len);
-	if (ft_memcmp(g_ctx.recv_buf + 16, g_ctx.send_buf + 16, 40) == 0) {
+	if (ft_memcmp(g_ctx.recv_buf + 16, g_ctx.send_buf + 16, DATA_SIZE - 16) == 0) {
 		received = recvfrom(g_ctx.socket_fd, g_ctx.recv_buf, sizeof(g_ctx.recv_buf), 0, (struct sockaddr *)g_ctx.dst,
 				&dst_addr_len);
 	}
