@@ -3,6 +3,7 @@
 ping_context_t g_ctx;
 
 void statistics_handler(int sig) {
+	(void)sig;
 	char buff[1024];
 	if (is_fqdn(g_ctx.host)) {
 		printf("\n--- %s ping statistics ---\n", g_ctx.host);
@@ -41,6 +42,7 @@ void statistics_handler(int sig) {
 }
 
 void random_statistics_handler(int sig) {
+	(void)sig;
 	printf("\r%d/%d packets, %d%% loss", g_ctx.stats.received, g_ctx.stats.transmitted,
 			(int)((g_ctx.stats.transmitted - g_ctx.stats.received) * 100.0) / g_ctx.stats.transmitted);
 	if (g_ctx.stats.received > 0) {
@@ -96,8 +98,6 @@ int receive_packet() {
 	int received;
 	ft_memset(g_ctx.recv_buf, 0, sizeof(g_ctx.recv_buf));
 	socklen_t dst_addr_len;
-	struct ip *ip = (struct ip *)g_ctx.recv_buf;
-	struct icmp *icmp = (struct icmp *)(ip + 1);
 
 	dst_addr_len = sizeof(*g_ctx.dst);
 	received = recvfrom(g_ctx.socket_fd, g_ctx.recv_buf, sizeof(g_ctx.recv_buf), 0, (struct sockaddr *)g_ctx.dst, &dst_addr_len);
@@ -181,6 +181,7 @@ int get_precision(double duration) {
 }
 
 void ping_handler(int sig) {
+	(void)sig;
 	struct timeval start, end;
 	int duration;
 	int sent;
@@ -198,7 +199,6 @@ void ping_handler(int sig) {
 		char src_name[INET_ADDRSTRLEN];
 		char dst_name[INET_ADDRSTRLEN];
 		char src_dns[1024];
-		char dst_dns[1024];
 		inet_ntop(AF_INET, &ip->ip_src, src_name, INET_ADDRSTRLEN);
 		inet_ntop(AF_INET, &ip->ip_dst, dst_name, INET_ADDRSTRLEN);
 		if (received) {

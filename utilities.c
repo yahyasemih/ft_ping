@@ -9,6 +9,7 @@ void *ft_memset(void *s, int c, size_t n) {
 	for (size_t i = 0; i < n; i++) {
 		data[i] = c;
 	}
+	return s;
 }
 
 int ft_memcmp(const void *s1, const void *s2, size_t n) {
