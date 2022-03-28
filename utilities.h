@@ -15,6 +15,7 @@ int dns_resolve(const char *host, char *dest, int size);
 unsigned short cksum(unsigned short *addr, int len);
 int search_char(const char *s, char c);
 int is_ip(const char *host);
+int is_fqdn(const char *host);
 const char *get_from_addr(const char *host, char *dest, int show_ip);
 
 #endif

@@ -76,6 +76,17 @@ int is_ip(const char *host) {
 	return 1;
 }
 
+int is_fqdn(const char *host) {
+	int nb_dots = 0;
+	for (int i = 0; host[i] != '\0'; i++) {
+		if (host[i] == '.') {
+			nb_dots++;
+		}
+	}
+
+	return nb_dots > 0;
+}
+
 const char *get_from_addr(const char *host, char *dest, int show_ip) {
 	char buff[1024];
 

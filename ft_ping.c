@@ -3,7 +3,16 @@
 ping_context_t g_ctx;
 
 void statistics_handler(int sig) {
-	printf("\n--- %s ping statistics ---\n", g_ctx.host);
+	char buff[1024];
+	if (is_fqdn(g_ctx.host)) {
+		printf("\n--- %s ping statistics ---\n", g_ctx.host);
+	} else {
+		if (dns_resolve(g_ctx.host_ip, buff, 1024)) {
+			printf("\n--- %s ping statistics ---\n", g_ctx.host);
+		} else {
+			printf("\n--- %s ping statistics ---\n", buff);
+		}
+	}
 	double min = g_ctx.stats.min / 1000.0;
 	double avg = g_ctx.stats.sum / (g_ctx.stats.received * 1000.0);
 	double max = g_ctx.stats.max / 1000.0;
@@ -74,12 +83,9 @@ int send_packet() {
 			dst_addr_len);
 	if (sent >= 0) {
 		g_ctx.stats.transmitted++;
-		if (g_ctx.flags & FLAG_VERB) {
-			fprintf(stderr, "sent %d\n", sent);
-		}
 	} else {
 		if (g_ctx.flags & FLAG_VERB) {
-			fprintf(stderr, "error in send %s\n", strerror(errno));
+			fprintf(stderr, "Error while sending packet: %s\n", strerror(errno));
 		}
 		return 0;
 	}
@@ -99,13 +105,9 @@ int receive_packet() {
 		received = recvfrom(g_ctx.socket_fd, g_ctx.recv_buf, sizeof(g_ctx.recv_buf), 0, (struct sockaddr *)g_ctx.dst, &dst_addr_len);
 	}
 
-	if (received >= 0) {
+	if (received < 0) {
 		if (g_ctx.flags & FLAG_VERB) {
-			fprintf(stderr, "received %d\n", received);
-		}
-	} else {
-		if (g_ctx.flags & FLAG_VERB) {
-			fprintf(stderr, "error in receive %s\n", strerror(errno));
+			fprintf(stderr, "Error while receiving packet: %s\n", strerror(errno));
 		}
 		return 0;
 	}
@@ -115,10 +117,14 @@ int receive_packet() {
 void socket_handler(const char *str) {
 	int options = 1;
 	struct timeval timeout;
-    timeout.tv_sec = 3;
+    timeout.tv_sec = 10;
     timeout.tv_usec = 0;
+	int type = SOCK_RAW;
 
-	g_ctx.socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+	if (g_ctx.flags & FLAG_DEBUG) {
+		type |= SO_DEBUG;
+	}
+	g_ctx.socket_fd = socket(AF_INET, type, IPPROTO_ICMP);
 	if (g_ctx.socket_fd < 0) {
 		fprintf(stderr, "%s: socket: %s\n", str, strerror(errno));
 		exit(2);
@@ -138,6 +144,42 @@ void socket_handler(const char *str) {
 	}
 }
 
+const char *get_icmp_error(int type, int code) {
+	if (type == ICMP_TIME_EXCEEDED) {
+		if (code == ICMP_EXC_TTL) {
+			return "Time to live exceeded";
+		} else {
+			return "Fragment Reass time exceeded";
+		}
+	} else if (type == ICMP_DEST_UNREACH) {
+		if (code == ICMP_NET_UNREACH) {
+			return "Destination Network Unreachable";
+		} else if (code == ICMP_HOST_UNREACH) {
+			return "Destination Host Unreachable";
+		} else if (code == ICMP_PROT_UNREACH) {
+			return "Destination Protocol Unreachable";
+		} else if (code == ICMP_PORT_UNREACH) {
+			return "Destination Port Unreachable";
+		} else {
+			return "Destination Unreachable";
+		}
+	} else {
+		return "ICMP Response Error";
+	}
+}
+
+int get_precision(double duration) {
+	if (duration >= 100) {
+		return 0;
+	} else if (duration >= 10) {
+		return 1;
+	} else if (duration >= 1) {
+		return 2;
+	} else {
+		return 3;
+	}
+}
+
 void ping_handler(int sig) {
 	struct timeval start, end;
 	int duration;
@@ -148,6 +190,9 @@ void ping_handler(int sig) {
 
 	gettimeofday(&start, NULL);
 	sent = send_packet();
+	if (!(g_ctx.flags & FLAG_QUIET) && (g_ctx.flags & FLAG_DAY)) {
+		printf("[%ld.%ld] ", start.tv_sec, start.tv_usec);
+	}
 	if (sent) {
 		received = receive_packet();
 		char src_name[INET_ADDRSTRLEN];
@@ -172,24 +217,29 @@ void ping_handler(int sig) {
 			int show_ip = is_ip(g_ctx.host) || (g_ctx.flags & FLAG_NUM);
 			if (icmp->icmp_type == ICMP_ECHOREPLY || icmp->icmp_type == ICMP_ECHO) {
 				g_ctx.stats.received++;
-				printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%3.3f ms\n", DATA_SIZE + 8,
-						get_from_addr(src_name, src_dns, show_ip), g_ctx.stats.transmitted, ip->ip_ttl,
-						duration / 1000.0);
-			} else if (icmp->icmp_type == ICMP_TIME_EXCEEDED) {
-				g_ctx.stats.errors++;
-				printf("From %s icmp_seq=%d Time to live exceeded\n", get_from_addr(src_name, src_dns, show_ip),
-						g_ctx.stats.transmitted);
+				if (!(g_ctx.flags & FLAG_QUIET)) {
+					printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%.*f ms\n", DATA_SIZE + 8,
+							get_from_addr(src_name, src_dns, show_ip), g_ctx.stats.transmitted, ip->ip_ttl,
+							get_precision(duration / 1000.0), duration / 1000.0);
+				}
 			} else {
-				printf("From %s icmp_seq=%d type %d code %d\n", get_from_addr(src_name, src_dns, show_ip),
-						g_ctx.stats.transmitted, icmp->icmp_type, icmp->icmp_code);
+				g_ctx.stats.errors++;
+				if (!(g_ctx.flags & FLAG_QUIET)) {
+					printf("From %s icmp_seq=%d %s\n", get_from_addr(src_name, src_dns, show_ip),
+							g_ctx.stats.transmitted, get_icmp_error(icmp->icmp_type, icmp->icmp_code));
+				}
 			}
 		} else {
 			g_ctx.stats.errors++;
-			printf("From %s : icmp_seq=%d Destination Host Unreachable 2\n", src_name, g_ctx.stats.transmitted);
+			if (!(g_ctx.flags & FLAG_QUIET)) {
+				printf("From %s icmp_seq=%d %s\n", src_name, g_ctx.stats.transmitted, strerror(errno));
+			}
 		}
 	} else {
 		g_ctx.stats.errors++;
-		printf("From %s : icmp_seq=%d Destination Host Unreachable 3\n", g_ctx.host_ip, g_ctx.stats.transmitted);
+		if (!(g_ctx.flags & FLAG_QUIET)) {
+			printf("From %s icmp_seq=%d %s\n", g_ctx.host_ip, g_ctx.stats.transmitted, strerror(errno));
+		}
 	}
 	if (g_ctx.count <= -1) {
 		alarm(g_ctx.interval);
@@ -210,14 +260,25 @@ void start_pinging(const char *str) {
 	int ret = getaddrinfo(g_ctx.host, NULL, &hints, &g_ctx.addr);
     if (ret) {
         fprintf(stderr, "%s: %s: %s\n", str, g_ctx.host, gai_strerror(ret));
+		freeaddrinfo(g_ctx.addr);
 		exit(2);
     }
 	g_ctx.dst = (struct sockaddr_in *)g_ctx.addr->ai_addr;
 	if (inet_ntop(g_ctx.addr->ai_family, &g_ctx.dst->sin_addr, g_ctx.host_ip, INET_ADDRSTRLEN) == NULL) {
 		fprintf(stderr, "%s: %s\n", str, strerror(errno));
+		freeaddrinfo(g_ctx.addr);
 		exit(2);
 	}
-	printf("PING %s (%s) %d(%d) bytes of data.\n", g_ctx.host, g_ctx.host_ip, DATA_SIZE, DATA_SIZE + 28);
+	char buff[1024];
+	if (is_fqdn(g_ctx.host)) {
+		printf("PING %s (%s) %d(%d) bytes of data.\n", g_ctx.host, g_ctx.host, DATA_SIZE, DATA_SIZE + 28);
+	} else {
+		if (dns_resolve(g_ctx.host_ip, buff, 1024)) {
+			printf("PING %s (%s) %d(%d) bytes of data.\n", g_ctx.host, g_ctx.host_ip, DATA_SIZE, DATA_SIZE + 28);
+		} else {
+			printf("PING %s (%s) %d(%d) bytes of data.\n", buff, g_ctx.host_ip, DATA_SIZE, DATA_SIZE + 28);
+		}
+	}
 	ping_handler(SIGALRM);
 }
 
@@ -288,7 +349,7 @@ int modifiers_handler(char c, char *argv[], int *x, int *y) {
 		if (value <= 0 || value > __LONG_MAX__) {
 			fprintf(stderr, "%s: invalid argument: '%ld': out of range: %ld <= value "
 					"<= %ld\n", argv[0], value, 1L, __LONG_MAX__);
-			exit(2);
+			exit(1);
 		}
 		g_ctx.count = value;
 	} else if (c == 'i') {
@@ -301,7 +362,7 @@ int modifiers_handler(char c, char *argv[], int *x, int *y) {
 		if (value < 0 || value > 255) {
 			fprintf(stderr, "%s: invalid argument: '%ld': out of range: %d <= value "
 					"<= %d\n", argv[0], value, 0, 255);
-			exit(2);
+			exit(1);
 		}
 		g_ctx.ttl = (int)value;
 	}
