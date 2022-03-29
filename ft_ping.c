@@ -88,7 +88,7 @@ int send_packet() {
 		g_ctx.stats.transmitted++;
 	} else {
 		if (g_ctx.flags & FLAG_VERB) {
-			fprintf(stderr, "Error while sending packet: %s\n", strerror(errno));
+			fprintf(stderr, "Error while sending packet: %s\n", ft_strerror(errno));
 		}
 		return 0;
 	}
@@ -110,7 +110,7 @@ int receive_packet() {
 
 	if (received < 0) {
 		if (g_ctx.flags & FLAG_VERB) {
-			fprintf(stderr, "Error while receiving packet: %s\n", strerror(errno));
+			fprintf(stderr, "Error while receiving packet: %s\n", ft_strerror(errno));
 		}
 		return 0;
 	}
@@ -129,20 +129,20 @@ void socket_handler(const char *str) {
 	}
 	g_ctx.socket_fd = socket(AF_INET, type, IPPROTO_ICMP);
 	if (g_ctx.socket_fd < 0) {
-		fprintf(stderr, "%s: socket: %s\n", str, strerror(errno));
+		fprintf(stderr, "%s: socket: %s\n", str, ft_strerror(errno));
 		exit(2);
 	}
 	if(setsockopt(g_ctx.socket_fd, IPPROTO_IP, IP_HDRINCL, &options, sizeof(options)) < 0)
     {
-        fprintf(stderr, "%s: socket: %s\n", str, strerror(errno));
+        fprintf(stderr, "%s: socket: %s\n", str, ft_strerror(errno));
 		exit(2);
     }
 	if (setsockopt (g_ctx.socket_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout))) {
-		fprintf(stderr, "%s: socket: %s\n", str, strerror(errno));
+		fprintf(stderr, "%s: socket: %s\n", str, ft_strerror(errno));
 		exit(2);
 	}
 	if (setsockopt (g_ctx.socket_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))) {
-		fprintf(stderr, "%s: socket: %s\n", str, strerror(errno));
+		fprintf(stderr, "%s: socket: %s\n", str, ft_strerror(errno));
 		exit(2);
 	}
 }
@@ -235,13 +235,13 @@ void ping_handler(int sig) {
 		} else {
 			g_ctx.stats.errors++;
 			if (!(g_ctx.flags & FLAG_QUIET)) {
-				printf("From %s icmp_seq=%d %s\n", src_name, g_ctx.stats.transmitted, strerror(errno));
+				printf("From %s icmp_seq=%d %s\n", src_name, g_ctx.stats.transmitted, ft_strerror(errno));
 			}
 		}
 	} else {
 		g_ctx.stats.errors++;
 		if (!(g_ctx.flags & FLAG_QUIET)) {
-			printf("From %s icmp_seq=%d %s\n", g_ctx.host_ip, g_ctx.stats.transmitted, strerror(errno));
+			printf("From %s icmp_seq=%d %s\n", g_ctx.host_ip, g_ctx.stats.transmitted, ft_strerror(errno));
 		}
 	}
 	if (g_ctx.count <= -1) {
@@ -268,7 +268,7 @@ void start_pinging(const char *str) {
     }
 	g_ctx.dst = (struct sockaddr_in *)g_ctx.addr->ai_addr;
 	if (inet_ntop(g_ctx.addr->ai_family, &g_ctx.dst->sin_addr, g_ctx.host_ip, INET_ADDRSTRLEN) == NULL) {
-		fprintf(stderr, "%s: %s\n", str, strerror(errno));
+		fprintf(stderr, "%s: %s\n", str, ft_strerror(errno));
 		freeaddrinfo(g_ctx.addr);
 		exit(2);
 	}
@@ -339,7 +339,7 @@ int modifiers_handler(char c, char *argv[], int *x, int *y) {
 		i++;
 		ret = 1;
 	}
-	value = strtoll(str, &end, 10);
+	value = ft_strtol(str, &end);
 	if (errno == ERANGE) {
 		fprintf(stderr, "%s: invalid argument: '%s': Numerical result out of range\n",
 				argv[0], str);

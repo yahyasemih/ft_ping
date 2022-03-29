@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <errno.h>
 
 unsigned short ft_htons(unsigned short n);
 void *ft_memset(void *s, int c, size_t n);
@@ -18,5 +19,7 @@ int is_ip(const char *host);
 int is_fqdn(const char *host);
 const char *get_from_addr(const char *host, char *dest, int show_ip);
 const char *ft_gai_strerror(int errcode);
+const char *ft_strerror(int errcode);
+long ft_strtol(const char *nptr, char **endptr);
 
 #endif
