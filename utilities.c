@@ -423,7 +423,7 @@ long ft_strtol(const char *nptr, char **endptr) {
 	while (ft_isspace(nptr[i])) {
 		i++;
 	}
-	if (nptr[i] == '-' || nptr[i] == '+') {
+	if ((nptr[i] == '-' || nptr[i] == '+') && nptr[i + 1] != '\0') {
 		sign = (nptr[i] == '-' ? -1 : 1);
 		i++;
 	}
