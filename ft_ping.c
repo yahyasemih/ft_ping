@@ -132,19 +132,13 @@ void socket_handler(const char *str) {
 		fprintf(stderr, "%s: socket: %s\n", str, ft_strerror(errno));
 		exit(2);
 	}
-	if(setsockopt(g_ctx.socket_fd, IPPROTO_IP, IP_HDRINCL, &options, sizeof(options)) < 0)
-    {
+	if(setsockopt(g_ctx.socket_fd, IPPROTO_IP, IP_HDRINCL, &options, sizeof(options)) < 0
+			|| setsockopt (g_ctx.socket_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0
+			|| setsockopt (g_ctx.socket_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
         fprintf(stderr, "%s: socket: %s\n", str, ft_strerror(errno));
+		close(g_ctx.socket_fd);
 		exit(2);
     }
-	if (setsockopt (g_ctx.socket_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout))) {
-		fprintf(stderr, "%s: socket: %s\n", str, ft_strerror(errno));
-		exit(2);
-	}
-	if (setsockopt (g_ctx.socket_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))) {
-		fprintf(stderr, "%s: socket: %s\n", str, ft_strerror(errno));
-		exit(2);
-	}
 }
 
 const char *get_icmp_error(int type, int code) {
