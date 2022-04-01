@@ -274,7 +274,7 @@ void start_pinging(const char *str) {
 	}
 	char buff[NI_MAXHOST];
 	if (is_fqdn(g_ctx.host)) {
-		printf("PING %s (%s) %d(%d) bytes of data.\n", g_ctx.host, g_ctx.host, DATA_SIZE, DATA_SIZE + 28);
+		printf("PING %s (%s) %d(%d) bytes of data.\n", g_ctx.host, g_ctx.host_ip, DATA_SIZE, DATA_SIZE + 28);
 	} else {
 		if (dns_resolve(g_ctx.host_ip, buff, NI_MAXHOST)) {
 			printf("PING %s (%s) %d(%d) bytes of data.\n", g_ctx.host, g_ctx.host_ip, DATA_SIZE, DATA_SIZE + 28);
